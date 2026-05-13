@@ -1,0 +1,2479 @@
+{
+  "name": "SEO Blog Article Generation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"website\": \"website url\",\n  \"seo_meta_title\": \"Example SEO title under 60 characters\",\n  \"seo_meta_description\": \"Example SEO meta description around 140 to 160 characters.\",\n  \"blog_title_h1\": \"Example Blog Title With Primary Keyword\",\n  \"blog_content\": \"Full blog content using clean WordPress-ready HTML with <h2>, <h3>, <p>, <ul>, <li>, and <a> tags.\",\n  \"suggested_url_slug\": \"example-seo-friendly-slug\",\n  \"primary_keyword\": \"example keyword\",\n  \"image_search_query\": \"short Pexels search query for a relevant blog featured image\",\n  \"internal_link_used\": {\n    \"url\": \"https://example.com/target-page\",\n    \"anchor_text\": \"relevant anchor text used in the article\"\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        368,
+        416
+      ],
+      "id": "ce25b989-0dae-45d8-a10f-25cb637e59a1",
+      "name": "JSON Format"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.website }}",
+                    "rightValue": "example-site-1.com",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "b950c8b3-c8ec-40b9-b8bf-e0717f4db33f"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "7a09924e-341e-4cb9-8ad7-a0c2a92347f1",
+                    "leftValue": "={{ $json.website }}",
+                    "rightValue": "example-site-2.com",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2192,
+        688
+      ],
+      "id": "b89a8135-3aa7-460f-a92c-50c70b615046",
+      "name": "Map to WordPress Site"
+    },
+    {
+      "parameters": {
+        "url": "https://api.pexels.com/v1/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.output.image_search_query }}"
+            },
+            {
+              "name": "size",
+              "value": "large"
+            },
+            {
+              "name": "per_page",
+              "value": "10"
+            },
+            {
+              "name": "orientation",
+              "value": "landscape"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        768,
+        192
+      ],
+      "id": "b470af95-66a7-4c5b-ba63-0247804e8819",
+      "name": "Fetch Images from Pexels",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_PEXELS_CREDENTIAL_ID",
+          "name": "Pexels API Credential"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -336,
+        48
+      ],
+      "id": "506e9454-472e-441e-8cff-42b8109e57b8",
+      "name": "Loop for Each Row"
+    },
+    {
+      "parameters": {
+        "content": "# SEO Blog Article Generation\n\n## Overview\n\nThis workflow automates blog creation from Google Sheets to WordPress. Features a SEO Blog AI Agent and an Image AI Agent powered by OpenAI ChatGPT, from generating a SEO friendly blog content to the selection of the blog featured image that best fit the blog content. This workflow also publish blog as draft for further review and updates Google Sheets with image details, WordPress post preview URL, and completion status. Upon completion, an email is sent to specified email address to notify the workflow has done its work.\n\n\n## Problem\n\n- Writing an article is time-consuming, let alone a huge set of articles.\n- Requires extensive researching about a product or topic.\n- Repeated tasks like content writing, image selection, uploading in WordPress and sheet updates which slows down the process and inefficiency.\n- Managing multiple websites manually can cause mistakes\n\n\n## Solution\n\n- Build an automated workflow to streamline the manual process of creating and writing blog posts.\n- Let AI generate the blog draft based on spreadsheet details.\n- Automatically find, select, and upload a relevant featured image.\n- Route each aritcle to publish to the correct WordPress website specified in the spreadsheet.\n- Send a completion email once the workflow finishes.",
+        "height": 608,
+        "width": 832,
+        "color": "#470151"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3296,
+        -272
+      ],
+      "typeVersion": 1,
+      "id": "454c3016-3002-4220-9ea7-4e40aafa7e31",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Choose the best Pexels image for this SEO blog post.\n\nBlog title:\n{{ $('SEO Blog AI Agent').item.json.output.blog_title_h1 }}\n\nPrimary keyword:\n{{ $('SEO Blog AI Agent').item.json.output.primary_keyword }}\n\nMeta description:\n{{ $('SEO Blog AI Agent').item.json.output.seo_meta_description }}\n\nWebsite:\n{{ $('SEO Blog AI Agent').item.json.output.website }}\n\nBlog content:\n{{ $('SEO Blog AI Agent').item.json.output.blog_content }}\n\nPexels image results:\n{{ JSON.stringify($json.photos) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are an image selection assistant for SEO blog posts.\n\nYour job is to review the images returned from Pexels and select the single best image for the blog post.\n\nYou will receive:\n- Blog title\n- Primary keyword\n- SEO meta description\n- Blog content or blog summary\n- Website\n- Language\n- Pexels image results\n\nSelection criteria:\n1. Choose the image that best matches the blog topic and search intent.\n2. Prefer images that would work well as a WordPress featured image.\n3. Prefer landscape images.\n4. Prefer clear, high-quality, natural-looking images.\n5. Prefer images with enough empty space or clean composition for blog layouts.\n6. Prefer images that feel relevant to the target audience of the website.\n7. Avoid images that are too generic, misleading, awkward, overly staged, unrelated, dark, blurry, cluttered, or visually confusing.\n8. Avoid images with visible text, logos, watermarks, UI screens, private documents, medical claims, legal claims, or sensitive personal information.\n9. Avoid images that imply a specific product, service, location, or promise unless the blog clearly supports it.\n10. If several images are relevant, choose the most specific image instead of the most generic image.\n\nReturn only valid JSON.\n\nOutput format:\n{\n  \"selected_photo_url\": \"best image URL\",\n  \"selected_photo_alt_text\": \"short descriptive alt text under 125 characters\",\n  \"photographer\": \"photographer name if available\",\n  \"pexels_url\": \"Pexels page URL if available\",\n  \"reason\": \"brief reason why this image fits the blog\"\n}\n\nAlt text rules:\n- Write natural descriptive alt text.\n- Do not start with Image of, Picture of, or Photo of.\n- Include the main visual subject.\n- Do not keyword-stuff.\n- Keep it under 125 characters."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        992,
+        192
+      ],
+      "id": "648dfa1a-535b-43b0-8d27-0787c8702c03",
+      "name": "Image AI Agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Create an SEO-friendly blog post using this Google Sheets row:\n\nWebsite: {{ $json.website }}\nLanguage: {{ $json.language }}\nWord Count: {{ $json.word_count }}\nMeta Title: {{ $json.meta_title }}\nMeta Description: {{ $json.meta_desc }}\nPrimary Keyword: {{ $json.keyword }}\nTarget URL: {{ $json.targeted_url }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are an expert SEO blog writer.\n\nBefore creating any blog post, you must read and follow the values from the current Google Sheets row.\n\nUse these fields:\n- website: Understand the target website, brand, niche, and audience.\n- language: Write the entire blog in this language.\n- word_count: Write close to this word count, with a tolerance of about ±10%.\n- meta_title: Use this as the SEO meta title. If it is empty, create an SEO-friendly meta title under 60 characters.\n- meta_desc: Use this as the SEO meta description. If it is empty, create an SEO-friendly meta description around 140–160 characters.\n- keyword: Treat this as the primary SEO keyword.\n- targeted_url: Use this as the target/internal URL. Include it naturally in the blog content one time using relevant anchor text.\n\nDo not use, mention, summarize, or rely on photo_url, docs_url, Done, or wp_url when creating the blog. These fields are only for workflow or publishing management and are not part of the blog content.\n\nSEO requirements:\n- The blog must be helpful, natural, and written for humans first.\n- Use the primary keyword naturally in the title, introduction, at least one heading, and conclusion.\n- Do not keyword-stuff.\n- Create a clear SEO-friendly structure using H1, H2, and H3 headings.\n- The H1 should be attractive and include the primary keyword if possible.\n- Start with a strong introduction that explains the topic and search intent.\n- Use short paragraphs, clear explanations, and practical information.\n- Use point form, bullet points, or numbered lists only when they are useful and reasonable, such as for steps, comparisons, examples, or key takeaways. Otherwise, write in natural paragraph form.\n- Add a conclusion with a natural call to action.\n- Include the targeted_url exactly one time in the blog content as a natural anchor text link. The anchor text must be relevant to the surrounding sentence and should not be the raw URL.\n- Use HTML link format for the internal link, like <a href=\"targeted_url\">relevant anchor text</a>. Do not paste the raw URL as visible text.\n- The content must be original, not copied from other websites.\n- Do not invent fake statistics, fake reviews, fake legal claims, or fake guarantees.\n- Keep the tone professional, clear, and suitable for the website audience.\n\nImage search query requirement:\n\nYou must also create one image_search_query for Pexels.\n\nThe image_search_query should help find a suitable featured image for the blog post.\n\nRules:\n- Use 2 to 5 simple English words.\n- Focus on the visual topic, not the exact SEO keyword if the keyword is too abstract.\n- Prefer concrete, searchable visual concepts such as people, places, food, interiors, tools, products, lifestyle, nature, business, travel, or education.\n- Do not include brand names unless the blog is specifically about that brand.\n- Do not include the website name.\n- Do not include punctuation, hashtags, quotation marks, or camera instructions.\n- Do not use vague words like blog, article, SEO, guide, tips, best, solution, or service.\n- If the topic is abstract, convert it into a natural visual scene.\n\nExamples:\n- Keyword: team building activities\n  image_search_query: office teamwork\n- Keyword: bamboo restaurant in KL\n  image_search_query: bamboo restaurant interior\n- Keyword: internship document checklist\n  image_search_query: student documents desk\n- Keyword: healthy eating tips\n  image_search_query: healthy meal preparation\n- Keyword: digital marketing strategy\n  image_search_query: marketing team meeting\n\nOutput format:\nReturn only valid JSON that matches the Structured Output Parser schema.\n\nDo not return markdown outside the JSON.\nDo not wrap the JSON in ```json code blocks.\nDo not include explanations before or after the JSON.\n\nThe blog_content field must contain clean WordPress-ready HTML, not Markdown.\n\nUse proper HTML tags:\n- <h2> for main sections\n- <h3> for sub-sections\n- <p> for paragraphs\n- <ul> and <li> for bullet lists\n- <ol> and <li> for numbered lists\n- <strong> for bold text where useful\n- <a href=\"targeted_url\">relevant anchor text</a> for the internal link\n\nDo not use Markdown syntax such as ##, ###, -, **bold**, or [anchor text](url).\nDo not include the H1 inside blog_content because blog_title_h1 will be used as the WordPress post title.\n\nReturn the website field exactly as provided in the Google Sheets row.",
+          "maxIterations": 10
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        192
+      ],
+      "id": "34503561-85d2-424b-8503-0427abe48b0a",
+      "name": "SEO Blog AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {
+          "webSearch": {
+            "searchContextSize": "medium"
+          }
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        992,
+        416
+      ],
+      "id": "b514323b-b44a-43cf-af75-6f8977a72a6a",
+      "name": "Image Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "OpenAI Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {
+          "webSearch": {
+            "searchContextSize": "medium"
+          }
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        416
+      ],
+      "id": "5cfb31bd-29d2-4432-a81f-293b55de366d",
+      "name": "Blog Article Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "OpenAI Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"selected_photo_url\": \"best image URL\",\n  \"selected_photo_alt_text\": \"short descriptive alt text under 125 characters\",\n  \"photographer\": \"photographer name if available\",\n  \"pexels_url\": \"Pexels page URL if available\",\n  \"reason\": \"brief reason why this image fits the blog\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1136,
+        416
+      ],
+      "id": "ae37acc4-b710-4ff0-91eb-5fbfb21d0a79",
+      "name": "JSON Format1"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Blog",
+          "cachedResultUrl": "REPLACE_WITH_GOOGLE_SHEET_URL"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Automation",
+          "cachedResultUrl": "REPLACE_WITH_GOOGLE_SHEET_URL"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "no"
+          ],
+          "schema": [
+            {
+              "id": "no",
+              "displayName": "no",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "language",
+              "displayName": "language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "word_count",
+              "displayName": "word_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "meta_title",
+              "displayName": "meta_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "meta_desc",
+              "displayName": "meta_desc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "keyword",
+              "displayName": "keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "targeted_url",
+              "displayName": "targeted_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "photo_url",
+              "displayName": "photo_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "alt_text",
+              "displayName": "alt_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "photographer",
+              "displayName": "photographer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "pexels_url",
+              "displayName": "pexels_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "wp_url",
+              "displayName": "wp_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "done",
+              "displayName": "done",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1520,
+        192
+      ],
+      "id": "661fa13b-7167-4e9e-bfac-f229532760a5",
+      "name": "Update photo_url in Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Pexels API Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.photo_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1728,
+        192
+      ],
+      "id": "1c3ea72a-de11-4b14-b0a1-95766666faa6",
+      "name": "Download Image",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Blog",
+          "cachedResultUrl": "REPLACE_WITH_GOOGLE_SHEET_URL"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Automation",
+          "cachedResultUrl": "REPLACE_WITH_GOOGLE_SHEET_URL"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "no"
+          ],
+          "schema": [
+            {
+              "id": "no",
+              "displayName": "no",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "language",
+              "displayName": "language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "word_count",
+              "displayName": "word_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "meta_title",
+              "displayName": "meta_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "meta_desc",
+              "displayName": "meta_desc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "keyword",
+              "displayName": "keyword",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "targeted_url",
+              "displayName": "targeted_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "photo_url",
+              "displayName": "photo_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "alt_text",
+              "displayName": "alt_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "photographer",
+              "displayName": "photographer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pexels_url",
+              "displayName": "pexels_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "wp_url",
+              "displayName": "wp_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "done",
+              "displayName": "done",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -896,
+        240
+      ],
+      "id": "bf62c271-b442-4d11-a5af-d318c1d7079f",
+      "name": "Update wp_url and status",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"no\": {{ JSON.stringify($('Get All Info Required from Sheets').item.json.no) }},\n  \"website\": {{ JSON.stringify($('Get All Info Required from Sheets').item.json.website) }},\n  \"photo_url\": {{ JSON.stringify($json.output.selected_photo_url) }},\n  \"alt_text\": {{ JSON.stringify($json.output.selected_photo_alt_text) }},\n  \"photographer\": {{ JSON.stringify($json.output.photographer) }},\n  \"pexels_url\": {{ JSON.stringify($json.output.pexels_url) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1312,
+        192
+      ],
+      "id": "066f8d9d-226f-427e-8336-43dda8c2baac",
+      "name": "Pack Image Data"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"no\": {{ JSON.stringify($('Get All Info Required from Sheets').item.json.no) }},\n  \"website\": {{ JSON.stringify($('Get All Info Required from Sheets').item.json.website) }},\n  \"wp_url\": {{ JSON.stringify($json.link || '') }},\n  \"done\": \"true\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1104,
+        240
+      ],
+      "id": "4b220c5d-dd79-486d-8708-fbf7ddb4604b",
+      "name": "Gather All Data for Update"
+    },
+    {
+      "parameters": {
+        "content": "## Upload Image to Media Library & Upload Post\n\n",
+        "height": 1056,
+        "width": 2016,
+        "color": "#165692"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2128,
+        608
+      ],
+      "typeVersion": 1,
+      "id": "c6a3c538-ea65-418c-8261-c191313c3ca8",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Image Selection & Processing\n\n",
+        "height": 720,
+        "width": 1188,
+        "color": "#45723C"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        704,
+        112
+      ],
+      "typeVersion": 1,
+      "id": "a54e9d04-3187-4acc-bfd1-4e4c5a862397",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "### Steps\n\n1. Fetch 10 relevant images from **Pexels** using the `image_search_query` generated by **SEO AI Agent**.\n2. **Image AI Agent** will select the best fitted image based on the article and will generate `alt_text` for the image.\n3. Spreadsheet then update column data for `photo_url`, `alt_text`, `photographer`, and `pexels_url`.\n4. Download image from **Pexels**.\n\n\n### Setup\n\n- **Pexels API**\n  1. Go to https://www.pexels.com/api/\n  2. Click 'Your API Key' and Copy to Clipboard\n  3. Edit `Fetch Images from Pexels` node\n  4. Set `Generic Auth Type` as `Header Auth`\n  5. Add new header auth credential: `Name`: Authorization, `Value`: *paste-your-api-key*",
+        "height": 416,
+        "width": 512,
+        "color": "#1D5827"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1344,
+        384
+      ],
+      "typeVersion": 1,
+      "id": "4779c4c8-5324-46f1-9f01-ed5bba2d1012",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "subject": "SEO Blog Drafts Generated Successfully",
+        "message": "=<div style=\"margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1f2937;\">\n  <div style=\"max-width:640px;margin:0 auto;padding:32px 16px;\">\n    <div style=\"background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;\">\n      \n      <div style=\"background:#111827;padding:24px 28px;color:#ffffff;\">\n        <h1 style=\"margin:0;font-size:22px;line-height:1.3;font-weight:700;\">\n          Article Generation Completed\n        </h1>\n        <p style=\"margin:8px 0 0;font-size:14px;color:#d1d5db;\">\n          Your SEO blog automation has finished generating the article drafts.\n        </p>\n      </div>\n\n      <div style=\"padding:28px;\">\n        <p style=\"margin:0 0 16px;font-size:15px;line-height:1.6;\">\n          Hi,\n        </p>\n\n        <p style=\"margin:0 0 18px;font-size:15px;line-height:1.6;\">\n          All articles were generated based on your Google Sheets inputs. The workflow has created the WordPress draft posts, selected featured images, uploaded the images, and updated the sheet where applicable.\n        </p>\n\n        <div style=\"background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;margin:22px 0;\">\n          <p style=\"margin:0 0 8px;font-size:14px;font-weight:700;color:#111827;\">\n            Next step\n          </p>\n          <p style=\"margin:0;font-size:14px;line-height:1.6;color:#4b5563;\">\n            Please review the generated WordPress drafts before publishing.\n          </p>\n        </div>\n\n        <p style=\"margin:22px 0 0;font-size:15px;line-height:1.6;\">\n          Thanks.\n        </p>\n      </div>\n\n      <div style=\"padding:18px 28px;background:#f9fafb;border-top:1px solid #e5e7eb;\">\n        <p style=\"margin:0;font-size:12px;line-height:1.5;color:#6b7280;\">\n          This is an automated notification from your SEO Blog Article Generation workflow.\n        </p>\n      </div>\n\n    </div>\n  </div>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1296,
+        -144
+      ],
+      "id": "64171c17-290f-4dd4-9b7e-ffc38ddafd43",
+      "name": "Send Completion Email",
+      "webhookId": "REPLACE_WITH_WEBHOOK_ID",
+      "executeOnce": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Final Step\n\n1. Update `wp_url` for user to see post preview \n2. Mark status to `done`",
+        "height": 320,
+        "width": 672,
+        "color": "#B12F2F"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1200,
+        128
+      ],
+      "typeVersion": 1,
+      "id": "579a63d8-80e2-4c25-b77e-249ddb945a67",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "### Steps\n\n1. Map to WordPress site.\n2. Upload downloaded image from previous step to the site's media library.\n3. Update uploaded image alternative text.\n4. Create a new post with generated blog content from **SEO AI Agent** (as Draft).\n5. Set featured image for the post.\n\n\n### Setup\n\n- **WordPress**\n  1. Go to your WordPress website\n  2. Sign in as admin\n  3. Find 'Users' from the sidebar and navigate to 'Profile'\n  4. Scroll near the bottom, find 'Application Passwords'\n  5. Fill the `New Application Password Name`, put any name you want, recommended: 'n8n'\n  6. Copy the password\n  7. Edit the node with WordPress logo, for `Credential`, add new credential:\n      1. `User`: *your-username-used-to-sign-in*\n      2. `Password`: *paste-the-application-password*\n  8. Edit the `Media Upload (your-website)` node, make sure:\n      - `Authentication`: 'Generic Credential Type'\n      - `Generic Auth Type`: 'Basic Auth'\n      - `Basic Auth`: \n        1. Create New Credential\n        2. `User`: *your-username-used-to-sign-in*\n        3. `Password`: *paste-the-application-password*\n  9. Edit the `Update Media Alt Text (your-website)` node, for `Basic Auth`, select the credential created in *step 7*\n  10. Edit the `Set Featured Image (your-website)` node, select the created credential\n\n\n### You Might Ask\n\n**Question: How can I add more websites?**\n**Answer: Yes, follow the steps below**\n1. Copy the following nodes shown in black sticky note with heading `Copy Me!`, or your existing website nodes, but please make sure it is setup correct, or else your workflow might not work\n2. Paste those nodes in another place\n3. Configure the necessary credentials, refer to `Setup` steps\n4. Edit the `Map to WordPress Site` node\n5. Add new `Routing Rule` (IMPORTANT!):\n    - `value1`: `{{ $json.website }}` is equal to `value2`: `yourdomain.com`\n6. Connect the `Map to WordPress Site` node (new routing rule) with your new website nodes\n7. Connect all HTTP Request node `error` path with `Set HTTP Error` node (make sure the HTTP node has enabled continue on error using error output) ",
+        "height": 992,
+        "width": 672,
+        "color": "#113E79"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3440,
+        640
+      ],
+      "typeVersion": 1,
+      "id": "b879a089-5e5f-4da6-a90e-f4927555ebcb",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($json.website.startsWith('http') ? $json.website : 'https://' + $json.website) + '/wp-json/wp/v2/media' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Disposition",
+              "value": "=attachment; filename=\"{{$binary.data.fileName || 'featured-image.jpg'}}\""
+            },
+            {
+              "name": "Content-Type",
+              "value": "={{$binary.data.mimeType || 'image/jpeg'}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3088,
+        1856
+      ],
+      "id": "1497af74-073f-403c-b37a-6b768af8150c",
+      "name": "Media Upload (website)",
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json._links.self[0].href }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"alt_text\": {{ JSON.stringify($('Download Image').item.json.alt_text) || $('SEO Blog AI Agent').item.json.output.blog_title_h1 }}\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3280,
+        1856
+      ],
+      "id": "4b28cffb-7fa3-46a5-83e3-19ab49f87718",
+      "name": "Update Media Alt Text (website)",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "title": "={{ $('SEO Blog AI Agent').item.json.output.blog_title_h1 }}",
+        "additionalFields": {
+          "content": "={{ $('SEO Blog AI Agent').item.json.output.blog_content }}",
+          "slug": "={{ $('SEO Blog AI Agent').item.json.output.suggested_url_slug }}",
+          "status": "draft",
+          "commentStatus": "open"
+        }
+      },
+      "type": "n8n-nodes-base.wordpress",
+      "typeVersion": 1,
+      "position": [
+        3520,
+        1856
+      ],
+      "id": "88a41c5e-20ad-4027-b43e-60340ef4170d",
+      "name": "website",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "wordpressApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "WordPress Site 2 Credential"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"no\": {{ JSON.stringify($('Pack Image Data').item.json.no) }},\n  \"website\": {{ JSON.stringify($('Pack Image Data').item.json.website) }},\n  \"post_id\": {{ $json.id }},\n  \"media_id\": {{ $('Media Upload (website)').item.json.id }}\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3760,
+        1856
+      ],
+      "id": "27ba01d9-e096-4c7d-9fb8-d6b0bae0a328",
+      "name": "Prepare Data (website)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($json.website.startsWith('http') ? $json.website : 'https://' + $json.website) + '/wp-json/wp/v2/posts/' + $json.post_id }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"featured_media\": {{ $json.media_id }}\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3968,
+        1856
+      ],
+      "id": "d4de5ede-16ca-416b-9a8e-ca38510d660c",
+      "name": "Set Featured Image (website)",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "### Copy Me!",
+        "height": 400,
+        "width": 1152,
+        "color": "#000000"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3008,
+        1712
+      ],
+      "typeVersion": 1,
+      "id": "0c72fd87-ec3f-489f-ad00-80270afa26f1",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## Upon Completion\n\nSend a completion email to notify admin or user that blogs are uploaded\n\n\n### Setup\n\n- **Gmail**\n  1. Add your gmail account credential by signing in\n  2. For `To:` (email recipient), fill who the email should be send to\n  3. Optional: You can modify the HTML code to fit your style",
+        "height": 368,
+        "width": 1184,
+        "color": "#B35600"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        704,
+        -336
+      ],
+      "typeVersion": 1,
+      "id": "995702cc-5d6a-44ae-a96c-53440d7be3f6",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "## Start\n\n### Steps:\n\n1. Workflow get all relevant info about a blog post before generating\n2. Only rows with status `done = false` are being processed\n\n### Setup:\n\n- **Google Sheets**\n  1. Download spreadsheets template: [Click Here](https://docs.google.com/spreadsheets/d/1ybJrjB6vnHmLUqWLYPXC7CKwcZ6UeoJKjqfrEDivujE/copy)\n      - Note: \n        a. Field highlighted with gray will be overwritten by this workflow, keep it empty\n        b. Fill all the fields that is not highlighted in gray\n        c. Leave the checkbox unchecked for the rows you want to process.\n  2. Select and configure `Document` and `Sheet` for all Google Sheets nodes, for node starts with 'Log', select 'Logs' as `Sheet`\n\n",
+        "height": 544,
+        "width": 672,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1200,
+        -480
+      ],
+      "typeVersion": 1,
+      "id": "48a32aac-8b9b-4eae-996b-d73dd0173651",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Automation",
+          "cachedResultUrl": "REPLACE_WITH_GOOGLE_SHEET_URL"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Automation",
+          "cachedResultUrl": "REPLACE_WITH_GOOGLE_SHEET_URL"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "done",
+              "lookupValue": "false"
+            },
+            {
+              "lookupColumn": "done",
+              "lookupValue": "="
+            }
+          ]
+        },
+        "combineFilters": "OR",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1056,
+        -128
+      ],
+      "id": "b244d02a-ea2e-41d6-9a2c-72895b7f3c68",
+      "name": "Get All Info Required from Sheets",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## AI Blog Writer\n\n",
+        "height": 464,
+        "width": 448,
+        "color": "#000000"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        112,
+        112
+      ],
+      "typeVersion": 1,
+      "id": "f1db17fc-7754-43c2-97c8-1709a3903f35",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Blog Automation",
+          "cachedResultUrl": "REPLACE_WITH_GOOGLE_SHEET_URL"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1875821992,
+          "mode": "list",
+          "cachedResultName": "Logs",
+          "cachedResultUrl": "REPLACE_WITH_GOOGLE_SHEET_URL"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "ref_no"
+          ],
+          "schema": [
+            {
+              "id": "ref_no",
+              "displayName": "ref_no",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2656,
+        1248
+      ],
+      "id": "3ab4b35b-c149-4993-8a06-d79bf216f469",
+      "name": "Log Error",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"ref_no\": {{ $('Check Rows Found').item.json.no }},\n  \"website\": {{ $('SEO Blog AI Agent').item.json.output.website }},\n  \"status\": \"Failed\",\n  \"message\": \"Unable to map to this website, please configure routing path in n8n\",\n  \"timestamp\": \"{{ $now.format('yyyy-MM-dd HH:mm:ss') }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2464,
+        1248
+      ],
+      "id": "13911ac1-73ad-4adb-bae3-8d410af3067c",
+      "name": "Set Error"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"ref_no\": \"N/A\",\n  \"website\": \"N/A\",\n  \"status\": \"Success\",\n  \"message\": \"All processed rows are now checked. Blog posts are ready for review.\",\n  \"timestamp\": \"{{ $now.format('yyyy-MM-dd HH:mm:ss') }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1504,
+        -144
+      ],
+      "id": "17c895b5-271f-485a-b7af-269c4444b317",
+      "name": "Set Complete"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Blog Automation",
+          "cachedResultUrl": "REPLACE_WITH_GOOGLE_SHEET_URL"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1875821992,
+          "mode": "list",
+          "cachedResultName": "Logs",
+          "cachedResultUrl": "REPLACE_WITH_GOOGLE_SHEET_URL"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "ref_no"
+          ],
+          "schema": [
+            {
+              "id": "ref_no",
+              "displayName": "ref_no",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1712,
+        -144
+      ],
+      "id": "30d42e34-3507-4b83-b65b-71d06dd49b7e",
+      "name": "Log Complete",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Blog Automation",
+          "cachedResultUrl": "REPLACE_WITH_GOOGLE_SHEET_URL"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1875821992,
+          "mode": "list",
+          "cachedResultName": "Logs",
+          "cachedResultUrl": "REPLACE_WITH_GOOGLE_SHEET_URL"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "ref_no"
+          ],
+          "schema": [
+            {
+              "id": "ref_no",
+              "displayName": "ref_no",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -96,
+        -336
+      ],
+      "id": "dc02d046-72a7-43e2-b8be-8225a3e7dcb2",
+      "name": "Log Empty Run",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"ref_no\": \"N/A\",\n  \"website\": \"N/A\",\n  \"status\": \"Success\",\n  \"message\": \"All rows are checked. Nothing to process.\",\n  \"timestamp\": \"{{ $now.format('yyyy-MM-dd HH:mm:ss') }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -304,
+        -336
+      ],
+      "id": "6e34282d-89ed-48e5-be5f-5d0f3489c722",
+      "name": "Nothing to Process"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -688,
+        240
+      ],
+      "id": "4b56cee0-8380-41a4-8dee-7e304403abce",
+      "name": "Wait 5 Seconds Between Iterations",
+      "webhookId": "REPLACE_WITH_WEBHOOK_ID"
+    },
+    {
+      "parameters": {
+        "content": "### Replace This Credential!",
+        "height": 240,
+        "width": 224,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3456,
+        1792
+      ],
+      "typeVersion": 1,
+      "id": "51a5adf1-b96e-4e63-b7b1-b985b03dfe52",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8f194be9-6f53-4056-861d-eb8d56ea65e1",
+              "leftValue": "={{ Object.keys($json).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -816,
+        -128
+      ],
+      "id": "eb40e90d-6446-45a4-b396-c7acfdce9f66",
+      "name": "Check Rows Found"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"ref_no\": {{ JSON.stringify($json.no || $('Current Row Context').item.json.no || '') }},\n  \"website\": {{ JSON.stringify($json.website || $('Current Row Context').item.json.website || '') }},\n  \"status\": \"Failed\",\n  \"message\": {{ JSON.stringify($json.error?.message || $json.message || $json.error?.description || \"Unknown error occurred\") }},\n  \"timestamp\": \"{{ $now.format('yyyy-MM-dd HH:mm:ss') }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4320,
+        2288
+      ],
+      "id": "fdefab2c-627a-49ba-9f53-cebdd6d4f30e",
+      "name": "Set HTTP Error"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Blog Automation",
+          "cachedResultUrl": "REPLACE_WITH_GOOGLE_SHEET_URL"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1875821992,
+          "mode": "list",
+          "cachedResultName": "Logs",
+          "cachedResultUrl": "REPLACE_WITH_GOOGLE_SHEET_URL"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "ref_no"
+          ],
+          "schema": [
+            {
+              "id": "ref_no",
+              "displayName": "ref_no",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "website",
+              "displayName": "website",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "useAppend": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        4512,
+        2288
+      ],
+      "id": "925336ff-8be3-42ce-b50b-9c824c852f27",
+      "name": "Log HTTP Error",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"no\": {{ JSON.stringify($json.no) }},\n  \"website\": {{ JSON.stringify($json.website) }},\n  \"language\": {{ JSON.stringify($json.language) }},\n  \"word_count\": {{ JSON.stringify($json.word_count) }},\n  \"meta_title\": {{ JSON.stringify($json.meta_title) }},\n  \"meta_desc\": {{ JSON.stringify($json.meta_desc) }},\n  \"keyword\": {{ JSON.stringify($json.keyword) }},\n  \"targeted_url\": {{ JSON.stringify($json.targeted_url) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        192
+      ],
+      "id": "f5dd8e7d-2759-4075-a270-3c62b09be454",
+      "name": "Current Row Context"
+    },
+    {
+      "parameters": {
+        "content": "## All Rows Checked = Empty Run\n",
+        "height": 288,
+        "width": 496,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -400,
+        -432
+      ],
+      "typeVersion": 1,
+      "id": "d6875b9d-d3be-497d-af8a-9cf231cfd83c",
+      "name": "Sticky Note12"
+    },
+    {
+      "parameters": {
+        "content": "## Log HTTP Error in Sheets",
+        "height": 304,
+        "width": 480,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4224,
+        2208
+      ],
+      "typeVersion": 1,
+      "id": "63058fca-8034-46f2-baa3-edcba459b714",
+      "name": "Sticky Note13"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1424,
+        -128
+      ],
+      "id": "0122c7e0-452b-4dcb-8778-36d7e9e45878",
+      "name": "Every Day at 8am"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($json.website.startsWith('http') ? $json.website : 'https://' + $json.website) + '/wp-json/wp/v2/media' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Disposition",
+              "value": "=attachment; filename=\"{{$binary.data.fileName || 'featured-image.jpg'}}\""
+            },
+            {
+              "name": "Content-Type",
+              "value": "={{$binary.data.mimeType || 'image/jpeg'}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2464,
+        784
+      ],
+      "id": "7bf2d5db-3206-4333-873a-37d7e5052efa",
+      "name": "Media Upload (website1)",
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "WordPress Site 1 Basic Auth"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($('Pack Image Data').item.json.website.startsWith('http') ? $('Pack Image Data').item.json.website : 'https://' + $('Pack Image Data').item.json.website) + '/wp-json/wp/v2/media/' + $json.id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"alt_text\": {{ JSON.stringify($('Download Image').item.json.alt_text) || $('SEO Blog AI Agent').item.json.output.blog_title_h1 }}\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2656,
+        784
+      ],
+      "id": "9a365042-4872-428c-919e-827932c4b97a",
+      "name": "Update Media Alt Text (website1)",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "WordPress Site 1 Basic Auth"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "title": "={{ $('SEO Blog AI Agent').item.json.output.blog_title_h1 }}",
+        "additionalFields": {
+          "content": "={{ $('SEO Blog AI Agent').item.json.output.blog_content }}",
+          "slug": "={{ $('SEO Blog AI Agent').item.json.output.suggested_url_slug }}",
+          "status": "draft",
+          "commentStatus": "open"
+        }
+      },
+      "type": "n8n-nodes-base.wordpress",
+      "typeVersion": 1,
+      "position": [
+        2848,
+        784
+      ],
+      "id": "105848da-d645-40be-9d4e-c7fb9f0852f3",
+      "name": "website1",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "wordpressApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "WordPress Site 1 Credential"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"no\": {{ JSON.stringify($('Pack Image Data').item.json.no) }},\n  \"website\": {{ JSON.stringify($('Pack Image Data').item.json.website) }},\n  \"post_id\": {{ $json.id }},\n  \"media_id\": {{ $('Media Upload (website1)').item.json.id }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3040,
+        784
+      ],
+      "id": "009e0c6c-1900-45bc-b598-3f3d15239c92",
+      "name": "Prepare Data (website1)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($json.website.startsWith('http') ? $json.website : 'https://' + $json.website) + '/wp-json/wp/v2/posts/' + $json.post_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"featured_media\": {{ $json.media_id }}\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3248,
+        784
+      ],
+      "id": "660b1a71-f447-4319-826b-fc6ad3c06552",
+      "name": "Set Featured Image (website1)",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "WordPress Site 1 Basic Auth"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($json.website.startsWith('http') ? $json.website : 'https://' + $json.website) + '/wp-json/wp/v2/media' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Disposition",
+              "value": "=attachment; filename=\"{{$binary.data.fileName || 'featured-image.jpg'}}\""
+            },
+            {
+              "name": "Content-Type",
+              "value": "={{$binary.data.mimeType || 'image/jpeg'}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2464,
+        1008
+      ],
+      "id": "d5603b70-df19-4bea-991c-2d55cb4d9e22",
+      "name": "Media Upload (website2)",
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "WordPress Site 2 Basic Auth"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json._links.self[0].href }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"alt_text\": {{ JSON.stringify($('Download Image').item.json.alt_text) || $('SEO Blog AI Agent').item.json.output.blog_title_h1 }}\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2656,
+        1008
+      ],
+      "id": "b6eacc4e-148a-4389-9990-1cf1717e5037",
+      "name": "Update Media Alt Text (website2)",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "WordPress Site 2 Basic Auth"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "title": "={{ $('SEO Blog AI Agent').item.json.output.blog_title_h1 }}",
+        "additionalFields": {
+          "content": "={{ $('SEO Blog AI Agent').item.json.output.blog_content }}",
+          "slug": "={{ $('SEO Blog AI Agent').item.json.output.suggested_url_slug }}",
+          "status": "draft",
+          "commentStatus": "open"
+        }
+      },
+      "type": "n8n-nodes-base.wordpress",
+      "typeVersion": 1,
+      "position": [
+        2848,
+        1008
+      ],
+      "id": "a122b5ed-fa6d-4437-ac67-25ebead20333",
+      "name": "website2",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "wordpressApi": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "WordPress Site 2 Credential"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"no\": {{ JSON.stringify($('Pack Image Data').item.json.no) }},\n  \"website\": {{ JSON.stringify($('Pack Image Data').item.json.website) }},\n  \"post_id\": {{ $json.id }},\n  \"media_id\": {{ $('Media Upload (website2)').item.json.id }}\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3040,
+        1008
+      ],
+      "id": "0f9f49cc-1f79-466e-aec9-71e2b4908433",
+      "name": "Prepare Data (website2)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($json.website.startsWith('http') ? $json.website : 'https://' + $json.website) + '/wp-json/wp/v2/posts/' + $json.post_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"featured_media\": {{ $json.media_id }}\n}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3248,
+        1008
+      ],
+      "id": "7fe0b578-ba82-474c-b078-dc916b459646",
+      "name": "Set Featured Image (website2)",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "WordPress Site 2 Basic Auth"
+        }
+      },
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "JSON Format": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "SEO Blog AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map to WordPress Site": {
+      "main": [
+        [
+          {
+            "node": "Media Upload (website1)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Media Upload (website2)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop for Each Row": {
+      "main": [
+        [
+          {
+            "node": "Send Completion Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Current Row Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Images from Pexels": {
+      "main": [
+        [
+          {
+            "node": "Image AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEO Blog AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Fetch Images from Pexels",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Image AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Blog Article Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "SEO Blog AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Pack Image Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Format1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Image AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update photo_url in Sheets": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Map to WordPress Site",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update wp_url and status": {
+      "main": [
+        [
+          {
+            "node": "Wait 5 Seconds Between Iterations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pack Image Data": {
+      "main": [
+        [
+          {
+            "node": "Update photo_url in Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gather All Data for Update": {
+      "main": [
+        [
+          {
+            "node": "Update wp_url and status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Media Upload (website)": {
+      "main": [
+        [
+          {
+            "node": "Update Media Alt Text (website)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Media Alt Text (website)": {
+      "main": [
+        [
+          {
+            "node": "website",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "website": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data (website)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data (website)": {
+      "main": [
+        [
+          {
+            "node": "Set Featured Image (website)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get All Info Required from Sheets": {
+      "main": [
+        [
+          {
+            "node": "Check Rows Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Error": {
+      "main": [
+        [
+          {
+            "node": "Loop for Each Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Error": {
+      "main": [
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Completion Email": {
+      "main": [
+        [
+          {
+            "node": "Set Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Complete": {
+      "main": [
+        [
+          {
+            "node": "Log Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nothing to Process": {
+      "main": [
+        [
+          {
+            "node": "Log Empty Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5 Seconds Between Iterations": {
+      "main": [
+        [
+          {
+            "node": "Loop for Each Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Rows Found": {
+      "main": [
+        [
+          {
+            "node": "Loop for Each Row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nothing to Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set HTTP Error": {
+      "main": [
+        [
+          {
+            "node": "Log HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log HTTP Error": {
+      "main": [
+        [
+          {
+            "node": "Loop for Each Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Featured Image (website)": {
+      "main": [
+        [
+          {
+            "node": "Gather All Data for Update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Current Row Context": {
+      "main": [
+        [
+          {
+            "node": "SEO Blog AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Empty Run": {
+      "main": [
+        []
+      ]
+    },
+    "Every Day at 8am": {
+      "main": [
+        [
+          {
+            "node": "Get All Info Required from Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Media Upload (website1)": {
+      "main": [
+        [
+          {
+            "node": "Update Media Alt Text (website1)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Media Alt Text (website1)": {
+      "main": [
+        [
+          {
+            "node": "website1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "website1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data (website1)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data (website1)": {
+      "main": [
+        [
+          {
+            "node": "Set Featured Image (website1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Featured Image (website1)": {
+      "main": [
+        [
+          {
+            "node": "Gather All Data for Update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Media Upload (website2)": {
+      "main": [
+        [
+          {
+            "node": "Update Media Alt Text (website2)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Media Alt Text (website2)": {
+      "main": [
+        [
+          {
+            "node": "website2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "website2": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data (website2)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data (website2)": {
+      "main": [
+        [
+          {
+            "node": "Set Featured Image (website2)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Featured Image (website2)": {
+      "main": [
+        [
+          {
+            "node": "Gather All Data for Update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set HTTP Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ver-id",
+  "id": "id",
+  "tags": []
+}
