@@ -412,8 +412,8 @@ This section shows how the workflow uploads the selected image, creates a WordPr
 
 <img width="1447" height="787" alt="WordPress media upload draft creation and featured image workflow nodes" src="https://github.com/user-attachments/assets/af22285f-2a4e-43b0-a335-b45ed0baffb3" />
 
-### 4. Completion Email and Logging
+### 4. Error Handling and Logging
 
-This section shows the final notification and logging steps after the workflow finishes processing the blog posts.
+This section shows when HTTP Request node failed, it logs run failure inside Google Sheets
 
 <img width="1160" height="585" alt="Completion email and spreadsheet logging workflow nodes" src="https://github.com/user-attachments/assets/cf0e78a6-00ca-4962-8b47-7aa49172fa8d" />
