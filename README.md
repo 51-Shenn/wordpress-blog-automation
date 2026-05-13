@@ -15,7 +15,7 @@ The workflow is designed for teams that manage multiple websites and want to red
 
 ## Workflow Preview
 
-The full workflow is large, so this overview image is meant to show the overall structure only. For clearer node-level details, refer to the section-by-section screenshots below.
+The full workflow is large, so this overview image is meant to show the overall structure only. For clearer node-level details, refer to [Screenshots](#screenshots).
 
 <img width="1620" height="798" alt="Full n8n SEO blog automation workflow overview" src="https://github.com/user-attachments/assets/708dfdb6-c4b9-41fb-aafd-2169cfe95b2d" />
 
