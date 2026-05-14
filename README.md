@@ -394,6 +394,8 @@ The admin or user will also receive a completion email confirming that the blog 
 
 ## Screenshots
 
+[`back to top`](#seo-blog-article-generation-workflow)
+
 ### 1. Google Sheets Input and Row Filtering
 
 This section shows how the workflow reads blog post data from Google Sheets and processes only rows where `done = false`.
